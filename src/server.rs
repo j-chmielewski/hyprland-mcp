@@ -7,7 +7,7 @@ use std::{
 use rmcp::{
     ServerHandler,
     handler::server::{tool::ToolRouter, wrapper::Parameters},
-    model::ServerInfo,
+    model::{ServerCapabilities, ServerInfo},
     schemars::JsonSchema,
     tool, tool_handler, tool_router,
 };
@@ -41,17 +41,13 @@ impl HyprlandMcpServer {
         })
     }
 
-    fn open(&self) -> Result<UnixStream, std::io::Error> {
-        Ok(UnixStream::connect(&self.sock)?)
-    }
-
     pub fn cmd(&self, cmd: &str) -> Result<String, std::io::Error> {
-        let mut f = self.open()?;
-        f.write_all(cmd.as_bytes())?;
-        f.shutdown(Shutdown::Write)?;
+        let mut sock = UnixStream::connect(&self.sock)?;
+        sock.write_all(cmd.as_bytes())?;
+        sock.shutdown(Shutdown::Write)?;
 
         let mut out = String::new();
-        f.read_to_string(&mut out)?;
+        sock.read_to_string(&mut out)?;
 
         Ok(out)
     }
@@ -80,6 +76,9 @@ impl HyprlandMcpServer {
 #[tool_handler]
 impl ServerHandler for HyprlandMcpServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::default()
+        ServerInfo {
+            capabilities: ServerCapabilities::builder().enable_tools().build(),
+            ..ServerInfo::default()
+        }
     }
 }

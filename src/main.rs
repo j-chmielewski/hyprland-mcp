@@ -1,13 +1,14 @@
 use tokio::io::{stdin, stdout};
 
-use rmcp::ServiceExt;
 use hyprland_mcp::server::HyprlandMcpServer;
+use rmcp::ServiceExt;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let transport = (stdin(), stdout());
     let server = HyprlandMcpServer::new()?;
-    server.serve(transport).await?;
+    let running = server.serve(transport).await?;
+    running.waiting().await?;
 
     Ok(())
 }
