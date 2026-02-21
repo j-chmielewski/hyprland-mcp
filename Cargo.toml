@@ -4,5 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.102"
-thiserror = "2.0.18"
+anyhow = "1.0"
+rmcp = "0.16"
+schemars = "1.2.1"
+serde = "1.0.228"
+tokio = { version = "1.49.0", features = ["io-std", "rt-multi-thread"] }
