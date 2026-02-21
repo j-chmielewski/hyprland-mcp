@@ -1,7 +1,9 @@
-use hyprland_mcp::write;
+use hyprland_mcp::cmd;
 
 fn main() -> anyhow::Result<()> {
-    write("dispatch workspace 1")?;
+    // let out = cmd("dispatch workspace 1")?;
+    let out = cmd("activewindow")?;
+    println!("OUT: {out}");
 
     Ok(())
 }

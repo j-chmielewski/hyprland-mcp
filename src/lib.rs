@@ -1,4 +1,9 @@
-use std::{io::Write, os::unix::net::UnixStream, sync::LazyLock};
+use std::{
+    io::{Read, Write},
+    net::Shutdown,
+    os::unix::net::UnixStream,
+    sync::LazyLock,
+};
 
 use thiserror::Error;
 
@@ -17,11 +22,17 @@ pub enum McpError {
 
 type Result<T> = std::result::Result<T, McpError>;
 
-pub fn open() -> Result<UnixStream> {
+fn open() -> Result<UnixStream> {
     Ok(UnixStream::connect(&*SOCK)?)
 }
 
-pub fn write(cmd: &str) -> Result<usize> {
+pub fn cmd(cmd: &str) -> Result<String> {
     let mut f = open()?;
-    Ok(f.write(cmd.as_bytes())?)
+    f.write_all(cmd.as_bytes())?;
+    f.shutdown(Shutdown::Write)?;
+
+    let mut out = String::new();
+    f.read_to_string(&mut out)?;
+
+    Ok(out)
 }
