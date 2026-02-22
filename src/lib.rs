@@ -7,7 +7,7 @@ use std::{
 use rmcp::{
     ServerHandler,
     handler::server::{tool::ToolRouter, wrapper::Parameters},
-    model::{ServerCapabilities, ServerInfo},
+    model::{Implementation, ServerCapabilities, ServerInfo},
     schemars::JsonSchema,
     tool, tool_handler, tool_router,
 };
@@ -78,6 +78,20 @@ impl ServerHandler for HyprlandMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
             capabilities: ServerCapabilities::builder().enable_tools().build(),
+            server_info: Implementation {
+                name: env!("CARGO_PKG_NAME").to_string(),
+                title: Some("Hyprland MCP".to_string()),
+                version: env!("CARGO_PKG_VERSION").to_string(),
+                description: Some(
+                    "Local MCP server for controlling Hyprland through its unix socket.".to_string(),
+                ),
+                icons: None,
+                website_url: Some("https://wiki.hypr.land".to_string()),
+            },
+            instructions: Some(
+                "Use `workspace` to switch workspaces. Use `dispatch` for raw hyprctl socket commands, for example `dispatch exec kitty` or `activewindow`."
+                    .to_string(),
+            ),
             ..ServerInfo::default()
         }
     }
