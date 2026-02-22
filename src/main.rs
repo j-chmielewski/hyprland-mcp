@@ -1,6 +1,6 @@
+use hyprland_mcp::HyprlandMcpServer;
 use tokio::io::{stdin, stdout};
 
-use hyprland_mcp::server::HyprlandMcpServer;
 use rmcp::ServiceExt;
 
 #[tokio::main]
