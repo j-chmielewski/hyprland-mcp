@@ -21,11 +21,17 @@ pub struct HyprlandMcpServer {
 
 #[derive(Deserialize, JsonSchema)]
 pub struct DispatchRequest {
+    /// Raw hyprctl socket command passed through verbatim.
+    ///
+    /// Examples:
+    /// - "dispatch exec kitty"
+    /// - "activewindow"
     command: String,
 }
 
 #[derive(Deserialize, JsonSchema)]
 pub struct WorkspaceRequest {
+    /// Target workspace number (1-based).
     n: usize,
 }
 
@@ -55,19 +61,23 @@ impl HyprlandMcpServer {
 
 #[tool_router]
 impl HyprlandMcpServer {
-    #[tool(description = "Dispatch hyprland command")]
-    async fn dispatch(
+    #[tool(description = "Run a raw hyprctl-style command via Hyprland socket")]
+    async fn hyprctl(
         &self,
         Parameters(DispatchRequest { command }): Parameters<DispatchRequest>,
     ) -> Result<String, String> {
         self.cmd(&command).map_err(|e| e.to_string())
     }
 
-    #[tool(description = "Go to workspace n")]
+    #[tool(description = "Switch to a numbered workspace")]
     async fn workspace(
         &self,
         Parameters(WorkspaceRequest { n }): Parameters<WorkspaceRequest>,
     ) -> Result<String, String> {
+        if n == 0 {
+            return Err("workspace must be >= 1".to_string());
+        }
+
         let command = format!("dispatch workspace {n}");
         self.cmd(&command).map_err(|e| e.to_string())
     }
@@ -89,7 +99,7 @@ impl ServerHandler for HyprlandMcpServer {
                 website_url: Some("https://wiki.hypr.land".to_string()),
             },
             instructions: Some(
-                "Use `workspace` to switch workspaces. Use `dispatch` for raw hyprctl socket commands, for example `dispatch exec kitty` or `activewindow`."
+                "Use `workspace` to switch workspaces (1-based). Use `hyprctl` for raw hyprctl-style socket commands such as `dispatch exec kitty`, `activewindow`, or `clients`."
                     .to_string(),
             ),
             ..ServerInfo::default()
