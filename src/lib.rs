@@ -20,16 +20,6 @@ pub struct HyprlandMcpServer {
 }
 
 #[derive(Deserialize, JsonSchema)]
-pub struct HyprctlRequest {
-    /// Raw hyprctl socket command passed through verbatim.
-    ///
-    /// Examples:
-    /// - "dispatch exec kitty"
-    /// - "activewindow"
-    command: String,
-}
-
-#[derive(Deserialize, JsonSchema)]
 pub struct WorkspaceRequest {
     /// Target workspace number (1-based).
     n: usize,
@@ -147,17 +137,14 @@ impl HyprlandMcpServer {
     fn quote(arg: &str) -> String {
         format!("\"{}\"", arg.replace('"', "\\\""))
     }
+
+    async fn hyprctl(&self, command: &str) -> Result<String, String> {
+        self.cmd(command).map_err(|e| e.to_string())
+    }
 }
 
 #[tool_router]
 impl HyprlandMcpServer {
-    #[tool(description = "Run a raw hyprctl-style command via Hyprland socket")]
-    async fn hyprctl(
-        &self,
-        Parameters(HyprctlRequest { command }): Parameters<HyprctlRequest>,
-    ) -> Result<String, String> {
-        self.cmd(&command).map_err(|e| e.to_string())
-    }
 
     #[tool(description = "Switch to a numbered workspace")]
     async fn workspace(
@@ -168,66 +155,43 @@ impl HyprlandMcpServer {
             return Err("workspace must be >= 1".to_string());
         }
 
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("dispatch workspace {n}"),
-        }))
-        .await
+        let command = format!("dispatch workspace {n}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Get active window info")]
     async fn activewindow(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "activewindow".to_string(),
-        }))
-        .await
+        self.hyprctl("activewindow").await
     }
 
     #[tool(description = "Get active workspace info")]
     async fn activeworkspace(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "activeworkspace".to_string(),
-        }))
-        .await
+        self.hyprctl("activeworkspace").await
     }
 
     #[tool(description = "Get animation and bezier info")]
     async fn animations(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "animations".to_string(),
-        }))
-        .await
+        self.hyprctl("animations").await
     }
 
     #[tool(description = "List registered binds")]
     async fn binds(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "binds".to_string(),
-        }))
-        .await
+        self.hyprctl("binds").await
     }
 
     #[tool(description = "List clients")]
     async fn clients(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "clients".to_string(),
-        }))
-        .await
+        self.hyprctl("clients").await
     }
 
     #[tool(description = "List config errors")]
     async fn configerrors(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "configerrors".to_string(),
-        }))
-        .await
+        self.hyprctl("configerrors").await
     }
 
     #[tool(description = "Get cursor position")]
     async fn cursorpos(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "cursorpos".to_string(),
-        }))
-        .await
+        self.hyprctl("cursorpos").await
     }
 
     #[tool(description = "List decorations for a window regex")]
@@ -235,10 +199,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(DecorationsRequest { window_regex }): Parameters<DecorationsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("decorations {window_regex}"),
-        }))
-        .await
+        let command = format!("decorations {window_regex}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Dismiss all or a specific amount of notifications")]
@@ -251,7 +213,7 @@ impl HyprlandMcpServer {
             None => "dismissnotify".to_string(),
         };
 
-        self.hyprctl(Parameters(HyprctlRequest { command })).await
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Issue a Hyprland dispatch command")]
@@ -259,10 +221,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(DispatchCommandRequest { args }): Parameters<DispatchCommandRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("dispatch {args}"),
-        }))
-        .await
+        let command = format!("dispatch {args}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Get config option value")]
@@ -270,26 +230,18 @@ impl HyprlandMcpServer {
         &self,
         Parameters(OptionNameRequest { option }): Parameters<OptionNameRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("getoption {option}"),
-        }))
-        .await
+        let command = format!("getoption {option}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "List global shortcuts")]
     async fn globalshortcuts(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "globalshortcuts".to_string(),
-        }))
-        .await
+        self.hyprctl("globalshortcuts").await
     }
 
     #[tool(description = "List Hyprland instances")]
     async fn instances(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "instances".to_string(),
-        }))
-        .await
+        self.hyprctl("instances").await
     }
 
     #[tool(description = "Dynamically set a Hyprland keyword")]
@@ -297,34 +249,23 @@ impl HyprlandMcpServer {
         &self,
         Parameters(KeywordRequest { name, value }): Parameters<KeywordRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("keyword {name} {value}"),
-        }))
-        .await
+        let command = format!("keyword {name} {value}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Enter Hyprland kill mode")]
     async fn kill(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "kill".to_string(),
-        }))
-        .await
+        self.hyprctl("kill").await
     }
 
     #[tool(description = "List layer surfaces")]
     async fn layers(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "layers".to_string(),
-        }))
-        .await
+        self.hyprctl("layers").await
     }
 
     #[tool(description = "List available layouts")]
     async fn layouts(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "layouts".to_string(),
-        }))
-        .await
+        self.hyprctl("layouts").await
     }
 
     #[tool(description = "List monitors")]
@@ -338,7 +279,7 @@ impl HyprlandMcpServer {
             "monitors".to_string()
         };
 
-        self.hyprctl(Parameters(HyprctlRequest { command })).await
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Send a Hyprland notification")]
@@ -355,7 +296,7 @@ impl HyprlandMcpServer {
             "notify {icon} {timeout_ms} {color} {}",
             Self::quote(&message)
         );
-        self.hyprctl(Parameters(HyprctlRequest { command })).await
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Issue an output subcommand")]
@@ -363,10 +304,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(RawArgsRequest { args }): Parameters<RawArgsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("output {args}"),
-        }))
-        .await
+        let command = format!("output {args}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Issue a plugin subcommand")]
@@ -374,10 +313,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(RawArgsRequest { args }): Parameters<RawArgsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("plugin {args}"),
-        }))
-        .await
+        let command = format!("plugin {args}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Reload Hyprland config")]
@@ -391,7 +328,7 @@ impl HyprlandMcpServer {
             "reload".to_string()
         };
 
-        self.hyprctl(Parameters(HyprctlRequest { command })).await
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Get rolling log")]
@@ -405,7 +342,7 @@ impl HyprlandMcpServer {
             "rollinglog".to_string()
         };
 
-        self.hyprctl(Parameters(HyprctlRequest { command })).await
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Set cursor theme and size")]
@@ -413,10 +350,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(SetCursorRequest { theme, size }): Parameters<SetCursorRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("setcursor {theme} {size}"),
-        }))
-        .await
+        let command = format!("setcursor {theme} {size}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Set Hyprland error string")]
@@ -425,7 +360,7 @@ impl HyprlandMcpServer {
         Parameters(SetErrorRequest { color, message }): Parameters<SetErrorRequest>,
     ) -> Result<String, String> {
         let command = format!("seterror {color} {}", Self::quote(&message));
-        self.hyprctl(Parameters(HyprctlRequest { command })).await
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Set window property")]
@@ -433,10 +368,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(RawArgsRequest { args }): Parameters<RawArgsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("setprop {args}"),
-        }))
-        .await
+        let command = format!("setprop {args}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Get window property")]
@@ -444,61 +377,44 @@ impl HyprlandMcpServer {
         &self,
         Parameters(RawArgsRequest { args }): Parameters<RawArgsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("getprop {args}"),
-        }))
-        .await
+        let command = format!("getprop {args}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Get splash text")]
     async fn splash(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "splash".to_string(),
-        }))
-        .await
+        self.hyprctl("splash").await
     }
 
     #[tool(description = "Switch keyboard layout")]
     async fn switchxkblayout(
         &self,
-        Parameters(SwitchXkbLayoutRequest { keyboard, command }): Parameters<SwitchXkbLayoutRequest>,
+        Parameters(SwitchXkbLayoutRequest { keyboard, command }): Parameters<
+            SwitchXkbLayoutRequest,
+        >,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("switchxkblayout {keyboard} {command}"),
-        }))
-        .await
+        let command = format!("switchxkblayout {keyboard} {command}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Get system info")]
     async fn systeminfo(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "systeminfo".to_string(),
-        }))
-        .await
+        self.hyprctl("systeminfo").await
     }
 
     #[tool(description = "Get Hyprland version")]
     async fn version(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "version".to_string(),
-        }))
-        .await
+        self.hyprctl("version").await
     }
 
     #[tool(description = "List workspace rules")]
     async fn workspacerules(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "workspacerules".to_string(),
-        }))
-        .await
+        self.hyprctl("workspacerules").await
     }
 
     #[tool(description = "List workspaces")]
     async fn workspaces(&self) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: "workspaces".to_string(),
-        }))
-        .await
+        self.hyprctl("workspaces").await
     }
 
     #[tool(description = "Issue a hyprpaper request")]
@@ -506,10 +422,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(RawArgsRequest { args }): Parameters<RawArgsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("hyprpaper {args}"),
-        }))
-        .await
+        let command = format!("hyprpaper {args}");
+        self.hyprctl(&command).await
     }
 
     #[tool(description = "Issue a hyprsunset request")]
@@ -517,10 +431,8 @@ impl HyprlandMcpServer {
         &self,
         Parameters(RawArgsRequest { args }): Parameters<RawArgsRequest>,
     ) -> Result<String, String> {
-        self.hyprctl(Parameters(HyprctlRequest {
-            command: format!("hyprsunset {args}"),
-        }))
-        .await
+        let command = format!("hyprsunset {args}");
+        self.hyprctl(&command).await
     }
 }
 
@@ -534,15 +446,13 @@ impl ServerHandler for HyprlandMcpServer {
                 title: Some("Hyprland MCP".to_string()),
                 version: env!("CARGO_PKG_VERSION").to_string(),
                 description: Some(
-                    "Local MCP server for controlling Hyprland through its unix socket.".to_string(),
+                    "Local MCP server for controlling Hyprland through its unix socket."
+                        .to_string(),
                 ),
                 icons: None,
                 website_url: Some("https://wiki.hypr.land".to_string()),
             },
-            instructions: Some(
-                "Use dedicated tools for each hyprctl subcommand. For advanced behavior, use `hyprctl` with a raw command string."
-                    .to_string(),
-            ),
+            instructions: Some("Use dedicated tools for each hyprctl subcommand.".to_string()),
             ..ServerInfo::default()
         }
     }
