@@ -1,7 +1,6 @@
-use std::{
-    io::{Read, Write},
-    net::Shutdown,
-    os::unix::net::UnixStream,
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::UnixStream,
 };
 
 use rmcp::{
@@ -123,13 +122,13 @@ impl HyprlandMcpServer {
         })
     }
 
-    pub fn cmd(&self, cmd: &str) -> Result<String, std::io::Error> {
-        let mut sock = UnixStream::connect(&self.sock)?;
-        sock.write_all(cmd.as_bytes())?;
-        sock.shutdown(Shutdown::Write)?;
+    pub async fn cmd(&self, cmd: &str) -> Result<String, std::io::Error> {
+        let mut sock = UnixStream::connect(&self.sock).await?;
+        sock.write_all(cmd.as_bytes()).await?;
+        sock.shutdown().await?;
 
         let mut out = String::new();
-        sock.read_to_string(&mut out)?;
+        sock.read_to_string(&mut out).await?;
 
         Ok(out)
     }
@@ -139,7 +138,7 @@ impl HyprlandMcpServer {
     }
 
     async fn hyprctl(&self, command: &str) -> Result<String, String> {
-        self.cmd(command).map_err(|e| e.to_string())
+        self.cmd(command).await.map_err(|e| e.to_string())
     }
 }
 
