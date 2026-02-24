@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 description = "Hyprland MCP server"
 license = "MIT"
+homepage = "https://github.com/j-chmielewski/hyprland-mcp"
+repository = "https://github.com/j-chmielewski/hyprland-mcp"
 
 [dependencies]
 anyhow = "1.0"
